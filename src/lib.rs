@@ -134,29 +134,44 @@ impl KeyboardInputManager {
 
     fn allocate_bindings(tv_commands_manager: &TvCommandsManager) {
         WKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("up"), tv_commands_manager));
+        UpKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("up"), tv_commands_manager));
         SKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("down"), tv_commands_manager));
+        DownKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("down"), tv_commands_manager));
         AKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("left"), tv_commands_manager));
+        LeftKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("left"), tv_commands_manager));
         DKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("right"), tv_commands_manager));
+        RightKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("right"), tv_commands_manager));
         NKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("netflix"), tv_commands_manager));
         HKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("home"), tv_commands_manager));
         F1Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("powerOff"), tv_commands_manager));
         F2Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("powerOn"), tv_commands_manager));
         EnterKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("enter"), tv_commands_manager));
         BackspaceKey.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("return"), tv_commands_manager));
+        Numrow1Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("hdmi1"), tv_commands_manager));
+        Numrow2Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("hdmi2"), tv_commands_manager));
+        Numrow3Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("hdmi3"), tv_commands_manager));
         Numrow4Key.block_bind(KeyboardInputManager::create_specialized_dispatcher(String::from("hdmi4"), tv_commands_manager));
     }
 
     fn deallocate_bindings() {
         WKey.unbind();
+        UpKey.unbind();
         SKey.unbind();
+        DownKey.unbind();
         AKey.unbind();
+        LeftKey.unbind();
         DKey.unbind();
+        RightKey.unbind();
         NKey.unbind();
         HKey.unbind();
         F1Key.unbind();
         F2Key.unbind();
         EnterKey.unbind();
         BackspaceKey.unbind();
+        Numrow1Key.unbind();
+        Numrow2Key.unbind();
+        Numrow3Key.unbind();
+        Numrow4Key.unbind();
     }
 
     fn create_specialized_dispatcher(command: String, tv_command_dispatcher: &TvCommandsManager) -> Box<dyn Fn() -> () + Send + Sync> {
