@@ -1,8 +1,8 @@
 use std::io::Write;
 use std::thread;
 use std::sync::mpsc;
-use std::io;
 use std::net::TcpStream;
+use std::net::SocketAddr;
 use std::sync::Mutex;
 use inputbot::{KeybdKey::*, handle_input_events};
 
@@ -30,12 +30,12 @@ impl Clone for TvCommand {
 }
 
 pub struct TvCommandsManager {
-    commands: [TvCommand; 11],
-    sender: Mutex<mpsc::Sender<[u8; 24]>>,
+    commands: [TvCommand; 14],
+    sender: mpsc::Sender<[u8; 24]>,
 }
 
 impl TvCommandsManager {
-    pub fn new() -> io::Result<TvCommandsManager> {
+    pub fn new(tv_address: SocketAddr) -> TvCommandsManager {
         let commands = [
             TvCommand::new(String::from("powerOff"), *b"*SCPOWR0000000000000000\n"),
             TvCommand::new(String::from("powerOn"), *b"*SCPOWR0000000000000001\n"),
@@ -47,30 +47,52 @@ impl TvCommandsManager {
             TvCommand::new(String::from("left"), *b"*SCIRCC0000000000000012\n"),
             TvCommand::new(String::from("enter"), *b"*SCIRCC0000000000000013\n"),
             TvCommand::new(String::from("return"), *b"*SCIRCC0000000000000008\n"),
+            TvCommand::new(String::from("hdmi1"), *b"*SCINPT0000000100000001\n"),
+            TvCommand::new(String::from("hdmi2"), *b"*SCINPT0000000100000002\n"),
+            TvCommand::new(String::from("hdmi3"), *b"*SCINPT0000000100000003\n"),
             TvCommand::new(String::from("hdmi4"), *b"*SCINPT0000000100000004\n"),
         ];
 
         let (sender, receiver): (mpsc::Sender<[u8; 24]>, mpsc::Receiver<[u8; 24]>) = mpsc::channel();
 
-        let mut stream = TcpStream::connect("192.168.10.106:20060")?;
+        let mut stream = match TcpStream::connect(tv_address) {
+            Ok(stream) => stream,
+            Err(error) => {
+                eprintln!("Error when connecting to TV. Is the TV still turned on and connected to the network? Error: {}", error);
+                panic!()
+            }
+        };
 
         thread::spawn(move || loop {
-            let tv_command_bytes = receiver.recv().unwrap();
-            stream.write(&tv_command_bytes).unwrap();
+            let tv_command_bytes = match receiver.recv() {
+                Ok(bytes) => bytes,
+                Err(_) => {
+                    panic!("Error while listening for incoming commands. It is likely there are no more command dispatchers.")
+                },
+            };
+
+            match stream.write_all(&tv_command_bytes) {
+                Ok(_) => (),
+                Err(error) => {
+                    eprintln!("Error when trying to send command {:?} to TV. Is the TV still turned on and connected to the network? Error: {}", tv_command_bytes, error);
+                    panic!()
+                }
+            };
         });
 
-        Ok(TvCommandsManager {
+        TvCommandsManager {
             commands,
-            sender: Mutex::new(sender)
-        })
+            sender
+        }
     }
 
     pub fn create_commands_dispatcher(&self) -> Box<dyn Fn(&str) -> () + Send + Sync> {
-        let cloned_sender = Mutex::new(self.sender.lock().unwrap().clone());
+        let cloned_sender = Mutex::new(self.sender.clone());
         let cloned_commands = self.commands.to_vec();
 
         let commands_dispatcher = move |tv_command_str: &str| {
             println!("Sending command {}", tv_command_str);
+
             let tv_command_bytes = match cloned_commands.iter().find(|tv_command| {
                 tv_command.name == tv_command_str
             }) {
@@ -81,7 +103,15 @@ impl TvCommandsManager {
                 }
             };
 
-            cloned_sender.try_lock().unwrap().send(tv_command_bytes).unwrap();
+            match cloned_sender.lock() {
+                Ok(sender) => {
+                    match sender.send(tv_command_bytes) {
+                        Ok(_) => (),
+                        Err(_) => { println!("Error sending command {}. Receiving end likely hung up.", tv_command_str) },
+                    }
+                },
+                Err(_) => { println!("Error acquiring lock to send command {}", tv_command_str) }
+            }
         };
 
         Box::new(commands_dispatcher)
@@ -94,14 +124,20 @@ pub struct KeyboardInputManager {
 
 impl KeyboardInputManager {
     pub fn new() -> KeyboardInputManager {
-        let tv_commands_manager = TvCommandsManager::new().unwrap();
+        let tv_commands_manager = TvCommandsManager::new(SocketAddr::from(([192, 168, 10, 106], 20060)));
         let (sender, receiver): (mpsc::Sender<u8>, mpsc::Receiver<u8>) = mpsc::channel();
 
         thread::spawn(move || {
             let mut key_binds_allocated = false;
 
             loop {
-                receiver.recv().unwrap();
+                match receiver.recv() {
+                    Ok(_) => (),
+                    Err(_) => {
+                        println!("Keyboard Input Manager has disconnected. Exiting...");
+                        break;
+                    }
+                };
 
                 key_binds_allocated = !key_binds_allocated;
 
@@ -121,7 +157,15 @@ impl KeyboardInputManager {
     }
 
     pub fn toggle_listening(&self) {
-        self.sender.lock().unwrap().send(1).unwrap();
+        match self.sender.lock() {
+            Ok(sender) => {
+                match sender.send(1) {
+                    Ok(_) => (),
+                    Err(_) => { println!("Error sending key bindings activation command. Receiving end likely hung up.") },
+                }
+            },
+            Err(_) => { println!("Error acquiring lock to send key bindings activation command") }
+        }
     }
 
     pub fn start(keyboard_input_manager: KeyboardInputManager) {
