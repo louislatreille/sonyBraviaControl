@@ -1,10 +1,15 @@
 [package]
 name = "sony_bravia_control"
-version = "0.1.0"
+authors = ["Louis Latreille <louis_latreille@hotmail.com>"]
 edition = "2018"
+version = "0.1.0"
+description = "A remote controller for your Sony BRAVIA smart TV"
+license = "MIT"
+repository = "https://github.com/louislatreille/sonyBraviaControl"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 inputbot = "0.5.0"
 configparser = "2.1.0"
+home = "0.5.3"

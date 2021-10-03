@@ -2,9 +2,9 @@
 This small utility program allows to control a sony BRAVIA smart TV with your keyboard.
 
 ## How to use
-- Download the version of the software for your OS (Windows or Linux).
-- Create a configuration file named `sony_bravia_control.ini`
-- Add your TV address an port to the ini file, such as `tv_address = 192.168.1.106:20060`
+- Download the latest version of the software for your OS (Windows or Linux)
+- Create a configuration file named `sony_bravia_control.ini` and add it to your home directory
+- Add your TV address and port to the ini file, such as `tv_address = 192.168.1.106:20060`
 - Start the controller
 
 ### Supported commands
@@ -33,4 +33,5 @@ The utility communicates with the TV with a TCP socket. It sends BRAVIA's simple
 The keybind listening is done with [InputBot](https://github.com/obv-mikhail/InputBot)
 
 ## Building
-To build for windows: `cargo build --target x86_64-pc-windows-gnu --release`
+To build for windows: `cargo build --target x86_64-pc-windows-gnu --release`<br/>
+To build for linux: `cargo build --target x86_64-unknown-linux-gnu --release`<br/>
