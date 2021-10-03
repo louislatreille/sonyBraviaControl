@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 inputbot = "0.5.0"
+configparser = "2.1.0"
